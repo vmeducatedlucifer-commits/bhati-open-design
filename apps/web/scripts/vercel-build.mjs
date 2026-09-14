@@ -3,11 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-console.log("=== Starting OpenDesign Vercel Build ===");
+console.log("=== Starting OpenDesign Vercel Build (from apps/web) ===");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Find monorepo root by walking up
 function findWorkspaceRoot(startDir) {
   let curr = startDir;
   while (curr && curr !== path.dirname(curr)) {
@@ -23,7 +22,6 @@ const rootDir = findWorkspaceRoot(__dirname);
 console.log(`Working in monorepo root: ${rootDir}`);
 process.chdir(rootDir);
 
-// 1. Build the web app with static export
 try {
   execSync("pnpm --filter @open-design/web build", {
     cwd: rootDir,
@@ -39,14 +37,12 @@ try {
   process.exit(1);
 }
 
-// 2. Locate output directory
 const candidates = [
   path.join(rootDir, "apps/web/out"),
   path.join(rootDir, "apps/web/.next/server/app"),
   path.join(rootDir, "apps/web/.next"),
 ];
 
-// Target out directory in root AND in current cwd
 const targetOutRoot = path.join(rootDir, "out");
 const targetOutCwd = path.resolve("out");
 
@@ -65,14 +61,12 @@ for (const cand of candidates) {
 }
 
 if (foundSource) {
-  console.log(`Copying files from ${foundSource} to ${targetOutRoot}...`);
+  console.log(`Copying files from ${foundSource} to target out directories...`);
   fs.cpSync(foundSource, targetOutRoot, { recursive: true });
   if (targetOutCwd !== targetOutRoot) {
     fs.cpSync(foundSource, targetOutCwd, { recursive: true });
   }
   console.log("Successfully copied output artifacts to out directories!");
-} else {
-  console.warn("No candidate output directory found. Checking apps/web directory...");
 }
 
 console.log("=== Vercel Build Complete ===");
