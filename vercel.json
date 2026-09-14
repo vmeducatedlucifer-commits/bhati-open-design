@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm --filter @open-design/web build && node -e \"const fs=require('fs'); if(fs.existsSync('apps/web/out')){fs.cpSync('apps/web/out', 'out', {recursive:true});}else if(fs.existsSync('apps/web/.next')){fs.cpSync('apps/web/.next', 'out', {recursive:true});}\"",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "outputDirectory": "out",
   "framework": null
 }
