@@ -35,6 +35,8 @@ installChatScrollTakeover();
 // 操作说明(怎么开、怎么关、开了会失去什么)写在模块顶部的 docblock 里。
 installChatScrollExperiments();
 
+import { BhatiAuthGate } from '../../src/components/BhatiAuthGate';
+
 // The product is a fully client-driven SPA — every component reads
 // localStorage, window.location, etc. — so we opt out of static-time
 // rendering for the entire tree. This keeps `next build --output export`
@@ -48,11 +50,15 @@ const App = dynamic(() => import('../../src/App').then((m) => m.App), {
   loading: () => (
     <div className="od-loading-shell">
       <MatrixLoader />
-      <span>Loading OpenDesign…</span>
+      <span>Loading Bhati Design Studio…</span>
     </div>
   ),
 });
 
 export function ClientApp() {
-  return <App />;
+  return (
+    <BhatiAuthGate>
+      <App />
+    </BhatiAuthGate>
+  );
 }
