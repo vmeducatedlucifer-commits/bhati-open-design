@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-console.log("=== Starting OpenDesign Vercel Build (from apps/daemon) ===");
+const initialCwd = process.cwd();
+console.log(`=== Starting OpenDesign Vercel Build (from apps/daemon, initialCwd: ${initialCwd}) ===`);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -43,14 +44,6 @@ const candidates = [
   path.join(rootDir, "apps/web/.next"),
 ];
 
-const targetOutRoot = path.join(rootDir, "out");
-const targetOutCwd = path.resolve("out");
-
-fs.mkdirSync(targetOutRoot, { recursive: true });
-if (targetOutCwd !== targetOutRoot) {
-  fs.mkdirSync(targetOutCwd, { recursive: true });
-}
-
 let foundSource = null;
 for (const cand of candidates) {
   if (fs.existsSync(cand)) {
@@ -60,13 +53,22 @@ for (const cand of candidates) {
   }
 }
 
+const targetDirs = [
+  path.join(rootDir, "out"),
+  path.join(initialCwd, "out"),
+  path.join(rootDir, "apps/daemon/out"),
+  path.join(rootDir, "apps/web/out"),
+];
+
 if (foundSource) {
-  console.log(`Copying files from ${foundSource} to target out directories...`);
-  fs.cpSync(foundSource, targetOutRoot, { recursive: true });
-  if (targetOutCwd !== targetOutRoot) {
-    fs.cpSync(foundSource, targetOutCwd, { recursive: true });
+  for (const target of targetDirs) {
+    if (target !== foundSource) {
+      fs.mkdirSync(target, { recursive: true });
+      fs.cpSync(foundSource, target, { recursive: true });
+      console.log(`Materialized out directory at: ${target}`);
+    }
   }
-  console.log("Successfully copied output artifacts to out directories!");
+  console.log("Successfully copied output artifacts to all target out locations!");
 }
 
 console.log("=== Vercel Build Complete ===");

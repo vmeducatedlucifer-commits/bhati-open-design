@@ -3,11 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-console.log("=== Starting OpenDesign Vercel Build ===");
+const initialCwd = process.cwd();
+console.log(`=== Starting OpenDesign Vercel Build (initialCwd: ${initialCwd}) ===`);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Find monorepo root by walking up
 function findWorkspaceRoot(startDir) {
   let curr = startDir;
   while (curr && curr !== path.dirname(curr)) {
@@ -46,15 +46,6 @@ const candidates = [
   path.join(rootDir, "apps/web/.next"),
 ];
 
-// Target out directory in root AND in current cwd
-const targetOutRoot = path.join(rootDir, "out");
-const targetOutCwd = path.resolve("out");
-
-fs.mkdirSync(targetOutRoot, { recursive: true });
-if (targetOutCwd !== targetOutRoot) {
-  fs.mkdirSync(targetOutCwd, { recursive: true });
-}
-
 let foundSource = null;
 for (const cand of candidates) {
   if (fs.existsSync(cand)) {
@@ -64,15 +55,25 @@ for (const cand of candidates) {
   }
 }
 
+// 3. Copy to ALL target out locations so Vercel finds it anywhere
+const targetDirs = [
+  path.join(rootDir, "out"),
+  path.join(initialCwd, "out"),
+  path.join(rootDir, "apps/daemon/out"),
+  path.join(rootDir, "apps/web/out"),
+];
+
 if (foundSource) {
-  console.log(`Copying files from ${foundSource} to ${targetOutRoot}...`);
-  fs.cpSync(foundSource, targetOutRoot, { recursive: true });
-  if (targetOutCwd !== targetOutRoot) {
-    fs.cpSync(foundSource, targetOutCwd, { recursive: true });
+  for (const target of targetDirs) {
+    if (target !== foundSource) {
+      fs.mkdirSync(target, { recursive: true });
+      fs.cpSync(foundSource, target, { recursive: true });
+      console.log(`Materialized out directory at: ${target}`);
+    }
   }
-  console.log("Successfully copied output artifacts to out directories!");
+  console.log("Successfully copied output artifacts to all target out locations!");
 } else {
-  console.warn("No candidate output directory found. Checking apps/web directory...");
+  console.warn("No candidate output directory found.");
 }
 
 console.log("=== Vercel Build Complete ===");
